@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "$_POST": [
+      {
+        "type": "text",
+        "options": {
+          "rules": {}
+        },
+        "name": "amount"
+      },
+      {
+        "type": "text",
+        "options": {
+          "rules": {}
+        },
+        "name": "currency"
+      }
+    ]
+  },
+  "exec": {
+    "steps": [
+      {
+        "name": "generateAccessToken",
+        "module": "api",
+        "action": "send",
+        "options": {
+          "url": "https://api-m.sandbox.paypal.com/v1/oauth2/token",
+          "method": "POST",
+          "data": {
+            "grant_type": "client_credentials"
+          },
+          "dataType": "x-www-form-urlencoded",
+          "auth": "username",
+          "password": "YOUR_CLIENT_SECRETE_HERE",
+          "username": "YOUR_CLIENT_ID_HERE"
+        }
+      },
+      {
+        "name": "createOrder",
+        "module": "api",
+        "action": "send",
+        "options": {
+          "dataType": "json",
+          "data": {
+            "intent": "CAPTURE",
+            "purchase_units": [
+              {
+                "amount": {
+                  "currency_code": "{{$_POST.currency}}",
+                  "value": "{{$_POST.amount}}"
+                }
+              }
+            ]
+          },
+          "url": "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+          "method": "POST",
+          "headers": {
+            "Authorization": "{{'Bearer '+generateAccessToken.data.access_token}}",
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      {
+        "name": "orderId",
+        "module": "core",
+        "action": "response",
+        "options": {
+          "status": 200,
+          "data": "{{createOrder.data}}"
+        },
+        "output": false
+      }
+    ]
+  }
+}
